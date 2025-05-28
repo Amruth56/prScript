@@ -19,6 +19,9 @@ async function setApiKey(apiKey) {
 async function generatePRDescription(commits) {
   const apiKey = await getApiKey();
   
+  console.log('PR Script: API Key length:', apiKey ? apiKey.length : 'null');
+  console.log('PR Script: Using model:', MODEL_NAME);
+  
   if (!apiKey) {
     throw new Error('API key not configured. Please set your OpenRouter API key in the extension popup.');
   }
@@ -34,33 +37,53 @@ Title: [A clear, concise title summarizing the changes]
 Description:
 [A detailed description explaining what was changed, why it was changed, and any important notes for reviewers]`;
 
+  console.log('PR Script: Making API request to:', OPENROUTER_API_URL);
+
+  const requestBody = {
+    model: MODEL_NAME,
+    messages: [
+      {
+        role: 'user',
+        content: prompt
+      }
+    ],
+    temperature: 0.7,
+    max_tokens: 1000
+  };
+
+  console.log('PR Script: Request body:', requestBody);
+
   const response = await fetch(OPENROUTER_API_URL, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
       'HTTP-Referer': 'https://github.com',
-      'X-Title': 'PR Script Extension'
+      'X-Title': 'PR Script Extension',
+      'User-Agent': 'PR-Script-Extension/1.0'
     },
-    body: JSON.stringify({
-      model: MODEL_NAME,
-      messages: [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 1000
-    })
+    body: JSON.stringify(requestBody)
   });
 
+  console.log('PR Script: Response status:', response.status);
+  console.log('PR Script: Response headers:', Object.fromEntries(response.headers.entries()));
+
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(`API Error: ${errorData.error?.message || 'Unknown error'}`);
+    const errorText = await response.text();
+    console.error('PR Script: Error response:', errorText);
+    
+    let errorData;
+    try {
+      errorData = JSON.parse(errorText);
+    } catch (e) {
+      errorData = { error: { message: errorText } };
+    }
+    
+    throw new Error(`API Error: ${errorData.error?.message || errorData.message || 'Unknown error'}`);
   }
 
   const data = await response.json();
+  console.log('PR Script: Success response:', data);
   return data.choices[0].message.content;
 }
 
@@ -100,6 +123,49 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     getApiKey()
       .then(apiKey => sendResponse({ apiKey: apiKey }))
       .catch(error => sendResponse({ error: error.message }));
+    
+    return true;
+  }
+  
+  if (request.action === 'testApiKey') {
+    // Test API key with a simple request
+    (async () => {
+      try {
+        const apiKey = await getApiKey();
+        console.log('PR Script: Testing API key...');
+        
+        const testResponse = await fetch(OPENROUTER_API_URL, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://github.com',
+            'X-Title': 'PR Script Extension',
+            'User-Agent': 'PR-Script-Extension/1.0'
+          },
+          body: JSON.stringify({
+            model: MODEL_NAME,
+            messages: [{ role: 'user', content: 'Hello, this is a test message.' }],
+            max_tokens: 50
+          })
+        });
+
+        console.log('PR Script: Test response status:', testResponse.status);
+        
+        if (!testResponse.ok) {
+          const errorText = await testResponse.text();
+          console.error('PR Script: Test API error:', errorText);
+          sendResponse({ success: false, error: errorText });
+        } else {
+          const testData = await testResponse.json();
+          console.log('PR Script: Test API success:', testData);
+          sendResponse({ success: true, data: testData });
+        }
+      } catch (error) {
+        console.error('PR Script: Test error:', error);
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
     
     return true;
   }

@@ -2,6 +2,7 @@
 const apiKeyInput = document.getElementById('apiKey');
 const saveKeyButton = document.getElementById('saveKey');
 const generateButton = document.getElementById('generate');
+const testApiButton = document.getElementById('testApi');
 const statusDiv = document.getElementById('status');
 
 // Load saved API key on popup open
@@ -57,6 +58,8 @@ generateButton.addEventListener('click', async () => {
         // Get current active tab
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         
+        console.log('Current tab URL:', tab.url);
+        
         if (!tab.url.includes('github.com')) {
             updateStatus('Please navigate to a GitHub page first', 'error');
             return;
@@ -70,18 +73,39 @@ generateButton.addEventListener('click', async () => {
         updateStatus('Triggering PR generation...', 'info');
         
         // Send message to content script to trigger generation
-        await chrome.tabs.sendMessage(tab.id, { action: 'triggerGeneration' });
-        
-        updateStatus('Generation triggered! Check the GitHub page.', 'success');
-        
-        // Close popup after a short delay
-        setTimeout(() => {
-            window.close();
-        }, 2000);
+        try {
+            await chrome.tabs.sendMessage(tab.id, { action: 'triggerGeneration' });
+            updateStatus('Generation triggered! Check the GitHub page.', 'success');
+            
+            // Close popup after a short delay
+            setTimeout(() => {
+                window.close();
+            }, 2000);
+        } catch (messageError) {
+            console.error('Message error:', messageError);
+            updateStatus('Extension not loaded on this page. Try refreshing the page.', 'error');
+        }
         
     } catch (error) {
         console.error('Error:', error);
-        updateStatus('Error: Make sure you\'re on a GitHub PR page', 'error');
+        updateStatus('Error: Make sure you\'re on a GitHub PR page and the extension is loaded', 'error');
+    }
+});
+
+// Test API key
+testApiButton.addEventListener('click', async () => {
+    updateStatus('Testing API key...', 'info');
+    
+    try {
+        const response = await chrome.runtime.sendMessage({ action: 'testApiKey' });
+        
+        if (response.success) {
+            updateStatus('API key is working! ✅', 'success');
+        } else {
+            updateStatus(`API test failed: ${response.error}`, 'error');
+        }
+    } catch (error) {
+        updateStatus('Error testing API key', 'error');
     }
 });
 
