@@ -5,9 +5,24 @@ const DEFAULT_API_KEY = 'sk-or-v1-a52b93773b7af5acf271ba0d75cfc340ff0c79c5b5aac9
 
 // Get API key from storage
 async function getApiKey() {
-  const result = await chrome.storage.sync.get(['openrouterApiKey']);
-  // Return stored key or default key if none is stored
-  return result.openrouterApiKey || DEFAULT_API_KEY;
+  try {
+    const result = await chrome.storage.sync.get(['openrouterApiKey']);
+    console.log('PR Script: Storage result:', result);
+    
+    const storedKey = result.openrouterApiKey;
+    const finalKey = storedKey || DEFAULT_API_KEY;
+    
+    console.log('PR Script: Stored key exists:', !!storedKey);
+    console.log('PR Script: Using default key:', !storedKey);
+    console.log('PR Script: Final key length:', finalKey ? finalKey.length : 'null');
+    console.log('PR Script: Final key starts with:', finalKey ? finalKey.substring(0, 10) + '...' : 'null');
+    
+    return finalKey;
+  } catch (error) {
+    console.error('PR Script: Error getting API key:', error);
+    console.log('PR Script: Falling back to default key');
+    return DEFAULT_API_KEY;
+  }
 }
 
 // Set API key in storage
@@ -53,15 +68,20 @@ Description:
 
   console.log('PR Script: Request body:', requestBody);
 
+  const headers = {
+    'Authorization': `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
+    'HTTP-Referer': 'https://github.com',
+    'X-Title': 'PR Script Extension',
+    'User-Agent': 'PR-Script-Extension/1.0'
+  };
+
+  console.log('PR Script: Request headers:', headers);
+  console.log('PR Script: Authorization header:', headers.Authorization.substring(0, 20) + '...');
+
   const response = await fetch(OPENROUTER_API_URL, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://github.com',
-      'X-Title': 'PR Script Extension',
-      'User-Agent': 'PR-Script-Extension/1.0'
-    },
+    headers: headers,
     body: JSON.stringify(requestBody)
   });
 
