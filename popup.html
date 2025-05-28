@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PR Script - Auto PR Description</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 PR Script</h1>
+            <p>Auto-generate PR descriptions from commits</p>
+        </div>
+        
+        <div class="section">
+            <h3>API Configuration</h3>
+            <div class="api-status">
+                <span class="status-indicator">✅</span>
+                <span>DeepSeek API key is pre-configured and ready to use!</span>
+            </div>
+            <details class="api-details">
+                <summary>Change API Key (Optional)</summary>
+                <div class="input-group">
+                    <label for="apiKey">OpenRouter API Key:</label>
+                    <input type="password" id="apiKey" placeholder="Enter your OpenRouter API key">
+                    <button id="saveKey" class="btn-secondary">Save</button>
+                </div>
+                <p class="help-text">
+                    Get your own API key from <a href="https://openrouter.ai" target="_blank">OpenRouter.ai</a>
+                </p>
+            </details>
+        </div>
+        
+        <div class="section">
+            <h3>Usage</h3>
+            <ol class="instructions">
+                <li>Go to a GitHub repository</li>
+                <li>Create a new pull request or compare branches</li>
+                <li>Click the "🤖 Generate PR Description" button that appears</li>
+                <li>Or use the button below if you're already on a PR page</li>
+            </ol>
+        </div>
+        
+        <div class="section">
+            <button id="generate" class="btn-primary">Generate for Current Page</button>
+            <div id="status"></div>
+        </div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>
