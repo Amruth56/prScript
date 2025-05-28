@@ -66,7 +66,14 @@ function extractCommitMessages() {
             return null;
           }
           
-          return text;
+          // Clean up the text
+          text = text.replace(/\s+/g, ' '); // Replace multiple spaces with single space
+          text = text.replace(/committed.*$/i, ''); // Remove "committed X ago" part
+          text = text.replace(/^\w+\s+committed\s+/i, ''); // Remove "username committed" part
+          text = text.replace(/view commit details/i, ''); // Remove "View commit details"
+          text = text.trim();
+          
+          return text.length > 10 ? text : null;
         })
         .filter(text => text !== null && text.length > 0);
       
@@ -100,6 +107,8 @@ function extractCommitMessages() {
         text = text.replace(/\s+/g, ' '); // Replace multiple spaces with single space
         text = text.replace(/committed.*$/i, ''); // Remove "committed X ago" part
         text = text.replace(/^\w+\s+committed\s+/i, ''); // Remove "username committed" part
+        text = text.replace(/view commit details/i, ''); // Remove "View commit details"
+        text = text.trim();
         
         return text.length > 10 ? text : null;
       })
