@@ -94,15 +94,26 @@ generateButton.addEventListener('click', async () => {
 
 // Test API key
 testApiButton.addEventListener('click', async () => {
-    updateStatus('Testing API key...', 'info');
+    updateStatus('Testing API and local fallback...', 'info');
     
     try {
         const response = await chrome.runtime.sendMessage({ action: 'testApiKey' });
         
         if (response.success) {
-            updateStatus('API key is working! ✅', 'success');
+            if (response.data.message) {
+                // Local generation test
+                updateStatus(response.data.message, 'success');
+            } else {
+                // API test success
+                updateStatus('API key is working! ✅', 'success');
+            }
         } else {
-            updateStatus(`API test failed: ${response.error}`, 'error');
+            if (response.fallback && response.localResult) {
+                // API failed but local fallback works
+                updateStatus('API failed, but local generation is working! 🔄', 'info');
+            } else {
+                updateStatus(`API test failed: ${response.error}`, 'error');
+            }
         }
     } catch (error) {
         updateStatus('Error testing API key', 'error');
