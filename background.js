@@ -1,7 +1,5 @@
 // API configuration
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const MODEL_NAME = 'deepseek/deepseek-chat-v3-0324:free'; // Back to DeepSeek model
-const DEFAULT_API_KEY = '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'; // Updated API key
+import { OPENROUTER_API_URL, MODEL_NAME, DEFAULT_API_KEY } from './env.js';
 
 // Get API key from storage
 async function getApiKey() {
