@@ -7,20 +7,13 @@ const DEFAULT_API_KEY = 'sk-or-v1-00b32103c474afeed91ec9fc58078554ee90b4d1cb5b5b
 async function getApiKey() {
   try {
     const result = await chrome.storage.sync.get(['openrouterApiKey']);
-    console.log('PR Script: Storage result:', result);
     
     const storedKey = result.openrouterApiKey;
     const finalKey = storedKey || DEFAULT_API_KEY;
     
-    console.log('PR Script: Stored key exists:', !!storedKey);
-    console.log('PR Script: Using default key:', !storedKey);
-    console.log('PR Script: Final key length:', finalKey ? finalKey.length : 'null');
-    console.log('PR Script: Final key starts with:', finalKey ? finalKey.substring(0, 10) + '...' : 'null');
-    
     return finalKey;
   } catch (error) {
-    console.error('PR Script: Error getting API key:', error);
-    console.log('PR Script: Falling back to default key');
+    console.error('Error retrieving API key from storage:', error);
     return DEFAULT_API_KEY;
   }
 }
@@ -33,9 +26,6 @@ async function setApiKey(apiKey) {
 // Generate PR description using AI
 async function generatePRDescription(commits) {
   const apiKey = await getApiKey();
-  
-  console.log('PR Script: API Key length:', apiKey ? apiKey.length : 'null');
-  console.log('PR Script: Using model:', MODEL_NAME);
   
   if (!apiKey) {
     throw new Error('API key not configured. Please set your OpenRouter API key in the extension popup.');
@@ -52,8 +42,6 @@ Title: [A clear, concise title summarizing the changes]
 Description:
 [A detailed description explaining what was changed, why it was changed, and any important notes for reviewers]`;
 
-  console.log('PR Script: Making API request to:', OPENROUTER_API_URL);
-
   const requestBody = {
     model: MODEL_NAME,
     messages: [
@@ -66,8 +54,6 @@ Description:
     max_tokens: 1000
   };
 
-  console.log('PR Script: Request body:', requestBody);
-
   const headers = {
     'Authorization': `Bearer ${apiKey}`,
     'Content-Type': 'application/json',
@@ -76,17 +62,11 @@ Description:
     'User-Agent': 'PR-Script-Extension/1.0'
   };
 
-  console.log('PR Script: Request headers:', headers);
-  console.log('PR Script: Authorization header:', headers.Authorization.substring(0, 20) + '...');
-
   const response = await fetch(OPENROUTER_API_URL, {
     method: 'POST',
     headers: headers,
     body: JSON.stringify(requestBody)
   });
-
-  console.log('PR Script: Response status:', response.status);
-  console.log('PR Script: Response headers:', Object.fromEntries(response.headers.entries()));
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -103,7 +83,6 @@ Description:
   }
 
   const data = await response.json();
-  console.log('PR Script: Success response:', data);
   return data.choices[0].message.content;
 }
 
@@ -152,7 +131,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     (async () => {
       try {
         const apiKey = await getApiKey();
-        console.log('PR Script: Testing API key...');
         
         const testResponse = await fetch(OPENROUTER_API_URL, {
           method: 'POST',
@@ -169,8 +147,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             max_tokens: 50
           })
         });
-
-        console.log('PR Script: Test response status:', testResponse.status);
         
         if (!testResponse.ok) {
           const errorText = await testResponse.text();
@@ -178,7 +154,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse({ success: false, error: errorText });
         } else {
           const testData = await testResponse.json();
-          console.log('PR Script: Test API success:', testData);
           sendResponse({ success: true, data: testData });
         }
       } catch (error) {

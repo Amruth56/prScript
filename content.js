@@ -29,8 +29,6 @@ function waitForElement(selector, timeout = 10000) {
 
 // Extract commit messages from GitHub PR page
 function extractCommitMessages() {
-  console.log('PR Script: Starting commit extraction...');
-  
   // More specific selectors for actual commit messages
   const commitSelectors = [
     '.commit-message', // Main commit message container
@@ -47,7 +45,6 @@ function extractCommitMessages() {
   // Try different selectors to find commit messages
   for (const selector of commitSelectors) {
     const elements = document.querySelectorAll(selector);
-    console.log(`PR Script: Trying selector "${selector}", found ${elements.length} elements`);
     
     if (elements.length > 0) {
       const extractedTexts = Array.from(elements)
@@ -79,19 +76,13 @@ function extractCommitMessages() {
       
       if (extractedTexts.length > 0) {
         commits = extractedTexts;
-        console.log(`PR Script: Found ${commits.length} commits using selector: ${selector}`);
-        console.log('PR Script: Extracted commits:', commits);
         break;
       }
     }
   }
 
-  // Fallback: Look for commit links and extract their text
   if (commits.length === 0) {
-    console.log('PR Script: Trying fallback method - looking for commit links...');
-    
     const commitLinks = document.querySelectorAll('a[href*="/commit/"]');
-    console.log(`PR Script: Found ${commitLinks.length} commit links`);
     
     commits = Array.from(commitLinks)
       .map(link => {
@@ -113,14 +104,10 @@ function extractCommitMessages() {
         return text.length > 10 ? text : null;
       })
       .filter(text => text !== null);
-    
-    console.log('PR Script: Fallback extracted commits:', commits);
   }
 
   // Final fallback: Manual extraction from visible text
   if (commits.length === 0) {
-    console.log('PR Script: Trying manual extraction...');
-    
     // Look for the specific commit we can see in the screenshot
     const allText = document.body.textContent || document.body.innerText || '';
     const lines = allText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
@@ -138,13 +125,11 @@ function extractCommitMessages() {
     });
     
     commits = potentialCommits.slice(0, 10); // Limit to 10
-    console.log('PR Script: Manual extraction found:', commits);
   }
 
   // If we still have no commits, add a default message
   if (commits.length === 0) {
     commits = ['cread and add functionalities for the extension', 'updated testing steps'];
-    console.log('PR Script: Using default commits as fallback');
   }
 
   return commits.slice(0, 10); // Limit to 10 commits max
@@ -207,7 +192,6 @@ function generatePRDescription() {
     return;
   }
 
-  console.log('Extracted commits:', commits);
   button.innerHTML = '🤖 Generating description...';
 
   // Send commits to background script
@@ -267,7 +251,6 @@ function insertDescription(description) {
 
     showNotification('PR description generated successfully!', 'success');
   } catch (error) {
-    console.error('Error inserting description:', error);
     showNotification('Error inserting description into form', 'error');
   }
 }
@@ -298,20 +281,16 @@ function showNotification(message, type = 'info') {
 
 // Listen for messages from background script and popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log('PR Script: Received message:', request);
-  
   if (request.action === 'insertDescription') {
     insertDescription(request.description);
   } else if (request.action === 'showError') {
     showNotification(request.error, 'error');
   } else if (request.action === 'triggerGeneration') {
     // Triggered from popup
-    console.log('PR Script: Triggering generation from popup');
     
     // Check if button exists, if not create it
     const existingButton = document.getElementById('pr-script-generate-btn');
     if (!existingButton) {
-      console.log('PR Script: Button not found, creating it first');
       createGenerateButton();
       // Wait a moment for button to be created
       setTimeout(() => {
@@ -329,27 +308,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 // Initialize when page loads
 function initialize() {
-  console.log('PR Script: Initializing on URL:', window.location.href);
-  
   // Check if we're on a GitHub PR creation or edit page
   const isGitHub = window.location.hostname === 'github.com';
   const isCompare = window.location.pathname.includes('/compare');
   const isPullNew = window.location.pathname.includes('/pull/new');
   const isPullEdit = window.location.pathname.includes('/pull/') && window.location.pathname.includes('/edit');
   
-  console.log('PR Script: GitHub check:', { isGitHub, isCompare, isPullNew, isPullEdit });
-  
   const isGitHubPR = isGitHub && (isCompare || isPullNew || isPullEdit);
 
   if (isGitHubPR) {
-    console.log('PR Script: Valid GitHub PR page detected, creating button...');
     // Wait a bit for GitHub's dynamic content to load
     setTimeout(() => {
       createGenerateButton();
-      console.log('PR Script: Button creation attempted');
     }, 2000);
-  } else {
-    console.log('PR Script: Not a GitHub PR page, skipping button creation');
   }
 }
 

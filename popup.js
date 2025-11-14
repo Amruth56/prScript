@@ -57,9 +57,7 @@ generateButton.addEventListener('click', async () => {
     try {
         // Get current active tab
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        
-        console.log('Current tab URL:', tab.url);
-        
+                
         if (!tab.url.includes('github.com')) {
             updateStatus('Please navigate to a GitHub page first', 'error');
             return;
